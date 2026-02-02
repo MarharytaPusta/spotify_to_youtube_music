@@ -4,7 +4,6 @@ from selenium.webdriver.common.by import By
 import time
 
 if __name__ == "__main__":
-
     with open("data.txt") as f:
         for i, line in enumerate(f):
             if i == 0:
@@ -50,7 +49,12 @@ if __name__ == "__main__":
     authors = authors_find[:number_of_songs]
     print(len(authors))
 
+    playlist_name = driver.find_element(By.CSS_SELECTOR, '.main-view-container__scroll-node-child [data-testid="playlist-page"] [role="grid"][aria-label]')
+    playlist_name = playlist_name.get_attribute("aria-label")
+    print(playlist_name)
+
     with open("songs.txt", "w", encoding="UTF-8") as f:
+        f.write(f"{playlist_name}\n")
         for i in range(len(names_of_songs) - 1):
             f.write(f"{names_of_songs[i]} — {authors_find[i]}\n")
 
