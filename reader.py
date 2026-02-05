@@ -19,8 +19,6 @@ if __name__ == "__main__":
     previous_count = 0
     stuck_counter = 0
 
-    print("Починаємо збір (ТІЛЬКИ основний плейліст)...")
-
     while True:
         try:
             #плейліст
