@@ -1,65 +1,84 @@
-import selenium
+
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time
+from selenium.common.exceptions import StaleElementReferenceException
 
 if __name__ == "__main__":
     with open("data.txt") as f:
         for i, line in enumerate(f):
             if i == 0:
                 playlist = line.strip()
+                print(playlist)
 
     driver = webdriver.Chrome()
     driver.get(playlist)
     time.sleep(5)
 
-    print("gfg")
-    print("gfg")
-#TODO перевірка чи прокручено сторінку до низу. Чому навіть при ручному прокруті не всі пісні бере?
-    element = driver.find_element(By.XPATH, '//*[@id="main-view"]/div/div[2]/div[3]/div/div')
+    songs = set()
+    previous_count = 0
+    stuck_counter = 0
 
-    driver.execute_script("arguments[0].scrollIntoView();", element)
+    print("Починаємо збір (ТІЛЬКИ основний плейліст)...")
 
-    names_of_songs = driver.find_elements(By.CSS_SELECTOR, '.main-view-container__scroll-node-child div[role="grid"] [role="row"] [data-testid="tracklist-row"][role="presentation"] [role="gridcell"] [data-testid="internal-track-link"] [data-encore-id="text"]')
-    print(len(names_of_songs))
-    names_of_songs = [names.text for names in names_of_songs]
-    print(len(names_of_songs))
+    while True:
+        try:
+            #плейліст
+            elem = driver.find_element(By.CSS_SELECTOR, '[data-testid="playlist-tracklist"]')
+            #пісні всередині
+            rows = elem.find_elements(By.CSS_SELECTOR, '[data-testid="tracklist-row"]')
+        except:
+            time.sleep(1)
+            continue
+        for row in rows:
+            try:
+                title = row.find_element(By.CSS_SELECTOR, '[data-testid="internal-track-link"] div').text
+                button = row.find_element(By.CSS_SELECTOR, 'button[aria-label]')
+                aria_text = button.get_attribute("aria-label")
+                index = aria_text.find(title)
+                if index != -1:
+                    aria_text = aria_text[index:]
+                index = len(title) + 1
+                aria_text = aria_text[index:]
+                index = aria_text.find(' ') + 1
+                artist = aria_text[index:]
 
-    full_songs_name = driver.find_elements(By.CSS_SELECTOR, '.main-view-container__scroll-node-child [role="grid"] [role="row"] [data-testid="tracklist-row"][role="presentation"] [role="gridcell"] button[aria-label]')
-    authors_find = []
-    for name in full_songs_name:
-        authors_find.append(name.get_attribute("aria-label"))
-    authors_find = authors_find[0::3]
-    for i in range(len(authors_find) - 1):
-        index = authors_find[i].find(names_of_songs[i])
-        authors_find[i] = authors_find[i][index:]
-    for i in range(len(authors_find) - 1):
-        index = len(names_of_songs[i]) + 1
-        authors_find[i] = authors_find[i][index:]
-        index = authors_find[i].find(' ') + 1
-        authors_find[i] = authors_find[i][index:]
+                full = f"{title} — {artist}"
+                songs.add(full)
+            except Exception:
+                continue
 
-    number_of_songs = driver.find_element(By.CSS_SELECTOR, '.main-view-container__scroll-node-child [data-testid="playlist-page"] [role="grid"][aria-rowcount]')
-    number_of_songs = number_of_songs.get_attribute("aria-rowcount")
-    number_of_songs = int(number_of_songs) - 1
-    print(number_of_songs)
-    print(len(names_of_songs))
-    names_of_songs = names_of_songs[:number_of_songs]
-    print(len(names_of_songs))
-    authors = authors_find[:number_of_songs]
-    print(len(authors))
+        current_count = len(songs)
+        print(current_count)
+        if current_count == previous_count:
+            stuck_counter += 1
+            if stuck_counter >= 8:
+                print("all")
+                break
+        else:
+            stuck_counter = 0
+            previous_count = current_count
 
-    playlist_name = driver.find_element(By.CSS_SELECTOR, '.main-view-container__scroll-node-child [data-testid="playlist-page"] [role="grid"][aria-label]')
+        try:
+            fresh_rows = elem.find_elements(By.CSS_SELECTOR, '[data-testid="tracklist-row"]')
+            if fresh_rows:
+                last_row = fresh_rows[-1]
+                driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", last_row)
+            else:
+                driver.execute_script("window.scrollBy(0, 500);")
+        except:
+            driver.execute_script("window.scrollBy(0, 600);")
+
+        time.sleep(1)
+
+
+    playlist_name = driver.find_element(By.CSS_SELECTOR,
+                                        '.main-view-container__scroll-node-child [data-testid="playlist-page"] [role="grid"][aria-label]')
     playlist_name = playlist_name.get_attribute("aria-label")
-    print(playlist_name)
 
     with open("songs.txt", "w", encoding="UTF-8") as f:
         f.write(f"{playlist_name}\n")
-        for i in range(len(names_of_songs) - 1):
-            f.write(f"{names_of_songs[i]} — {authors_find[i]}\n")
+        for song in songs:
+            f.write(f"{song}\n")
 
     driver.quit()
-
-
-
-
