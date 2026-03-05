@@ -115,17 +115,15 @@ class AddMusic:
             print("Something is wrong with your library")
             return
 
-        # create an array of songs
-        print("are we still here?")
         songs_here = self.driver.find_elements(By.CSS_SELECTOR, 'ytmusic-responsive-list-item-renderer .title a')
         songs_here = [song.text for song in songs_here]
         print(songs_here)
         print(len(songs_here))
-        is_missing = self.delete_if_in_file(songs_here, number_of_songs_from_spotify)
+        is_missing = self.delete_if_in_file(songs_here)
         return is_missing
 
 
-    def delete_if_in_file(self, songs_here, number_of_songs_from_spotify):
+    def delete_if_in_file(self, songs_here):
         songs_here = [song.lower() for song in songs_here]
         spotify_songs = []
         already_in_spotify = []
@@ -139,7 +137,7 @@ class AddMusic:
             spotify_songs_name.append(song[0:index].strip())
 
         print(spotify_songs_name)
-        if len(spotify_songs) - len(songs_here) != 0:
+        if len(spotify_songs) - len(songs_here) > 0:
             for i in range(len(spotify_songs)):
                 for here in songs_here:
                     similarity1 = SequenceMatcher(None, spotify_songs[i], here).ratio()
@@ -182,7 +180,7 @@ def add_music_to_playlist():
         bot = AddMusic()
         bot.login()
         bot.get_playlist_name()
-        # bot.add_songs()
+        bot.add_songs()
         for i in range(5):
             print("\n\n\nrestart\n\n\n")
             is_missing, still_not_found = bot.some_songs_was_missing()
@@ -192,7 +190,7 @@ def add_music_to_playlist():
         if is_missing == True:
             print(f"This song maybe has not been added: {still_not_found}")
     except Exception:
-        print("An error occurred while logging")
+        print("An error occurred while searching for the music or while logging. Please restart a program")
     finally:
         if bot and hasattr(bot, 'driver'):
             try:
@@ -208,8 +206,8 @@ def add_music_to_playlist():
 if __name__ == "__main__":
     print("For the addition to be successful, you must have a single playlist in YouTube Music that is named the same as in Spotify")
     print("It may also happen that the program does not find certain songs")
-    is_any_song = True
-    # is_any_song = reader.read_songs("data.txt")
+    # is_any_song = True
+    is_any_song = reader.read_songs("data.txt")
     if (is_any_song == False):
         print("You have no song in the playlist or you have some problem with file")
     else:
